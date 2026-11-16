@@ -2,6 +2,7 @@ import os
 import tkinter as tk
 import chess
 import chess.engine
+import customtkinter as ctk
 
 try:
     from PIL import Image, ImageTk
@@ -15,8 +16,8 @@ STOCKFISH_PATH = os.path.join(os.path.dirname(__file__), "stockfish", "stockfish
 CARPETA_PIEZAS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "piezas")
 
 
-LINEAS = 5          
-TIEMPO_ANALISIS = 0.4 
+LINEAS = 5
+TIEMPO_ANALISIS = 0.4
 
 #Configuración para elegir niveles de juego
 NIVELES = {
@@ -36,10 +37,12 @@ OSCURA = "#8B5696"
 SELECCION = "#F6F669"
 ULTIMA = "#BACA44"
 JAQUE = "#E5534B"
+MORADO_BOTON = "#7B3FD6"
+PANEL = "#1e1e1e"
 
 
 board = chess.Board()
-engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+engine = None   # el motor se abre cuando se muestra el tablero
 selected_square = None
 
 
@@ -78,50 +81,8 @@ def obtener_imagen(piece, tamano):
     return imagenes_cache[nombre]
 
 
-root = tk.Tk()
-root.title("Entrenador de Ajedrez")
-root.geometry("1100x700")
-root.minsize(800, 500)
-root.configure(bg=FONDO)
 
-root.columnconfigure(0, weight=1)
-root.rowconfigure(0, weight=1)
-
-
-
-left = tk.Frame(root, bg=FONDO)
-left.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
-left.columnconfigure(0, weight=1)
-left.rowconfigure(1, weight=1)
-
-status = tk.Label(left, text="Tu turno de jugar - Blancas", font=("Arial", 16),
-                  bg=FONDO, fg="white")
-status.grid(row=0, column=0, pady=10)
-
-canvas = tk.Canvas(left, bg=FONDO, highlightthickness=0)
-canvas.grid(row=1, column=0, sticky="nsew")
-
-controles = tk.Frame(left, bg=FONDO)
-controles.grid(row=2, column=0, pady=10)
-
-
-right = tk.Frame(root, bg="#1e1e1e", width=380)
-right.grid(row=0, column=1, sticky="ns", padx=(0, 10), pady=10)
-right.pack_propagate(False)
-right.grid_propagate(False)
-
-titulo = tk.Label(right, text="Análisis del módulo", font=("Arial", 14, "bold"),
-                  bg="#510043", fg="white")
-titulo.pack(pady=10)
-
-analysis_text = tk.Text(right, bg="#1e1e1e", fg="white", font=("Consolas", 11),
-                        wrap="word", relief="flat", state="disabled")
-analysis_text.pack(fill="both", expand=True, padx=10, pady=(0, 10))
-
-
-
-
-#Aquí es responsive 
+#Aquí es responsive
 def medidas():
     ancho = canvas.winfo_width()
     alto = canvas.winfo_height()
@@ -200,13 +161,13 @@ def update_board():
     # estado de la partida
     if board.is_checkmate():
         ganador = "Negras" if board.turn == chess.WHITE else "Blancas"
-        status.config(text="Jaque mate - Ganan las " + ganador)
+        status.configure(text="Jaque mate - Ganan las " + ganador)
     elif board.is_game_over():
-        status.config(text="Partida terminada: " + board.result())
+        status.configure(text="Partida terminada: " + board.result())
     else:
-        status.config(
+        status.configure(
             text="Tu turno de jugar - Blancas" if board.turn == chess.WHITE
-            else "Turno de del pc"
+            else "Turno del pc"
         )
 
 
@@ -225,7 +186,7 @@ def formato_score(score):
 #Como análisis (util más adelante para calcular el estilo de juego según amenazas)
 def analizar_posicion():
 
-    analysis_text.config(state="normal")
+    analysis_text.configure(state="normal")
     analysis_text.delete("1.0", "end")
 
     if not board.is_game_over():
@@ -246,7 +207,7 @@ def analizar_posicion():
                 f"{jugadas}\n\n"
             )
 
-    analysis_text.config(state="disabled")
+    analysis_text.configure(state="disabled")
 
 
 
@@ -258,17 +219,17 @@ def stockfish_move():
         return
 
     analizar_posicion()
-    root.update_idletasks()
+    canvas.update_idletasks()
 
     skill, tiempo = NIVELES[nivel_var.get()]
 
     engine.configure({"Skill Level": skill})
     result = engine.play(board, chess.engine.Limit(time=tiempo))
-    engine.configure({"Skill Level": 20})   
+    engine.configure({"Skill Level": 20})
 
     board.push(result.move)
     update_board()
-    root.update_idletasks()
+    canvas.update_idletasks()
     analizar_posicion()
 
 
@@ -314,7 +275,7 @@ def on_square_click(event):
         selected_square = None
 
         update_board()
-        root.update_idletasks()
+        canvas.update_idletasks()
 
         stockfish_move()
 
@@ -328,13 +289,6 @@ def on_square_click(event):
         update_board()
 
 
-canvas.bind("<Button-1>", on_square_click)
-canvas.bind("<Configure>", lambda event: update_board())
-
-
-
-
-
 #metodo para nueva partida
 def new_game():
 
@@ -344,40 +298,92 @@ def new_game():
     selected_square = None
 
     update_board()
-    root.update_idletasks()
+    canvas.update_idletasks()
     analizar_posicion()
 
 
-tk.Label(controles, text="Nivel:", font=("Arial", 12),
-         bg=FONDO, fg="white").pack(side="left", padx=(0, 6))
+# PANTALLA DEL TABLERO (SE DIBUJA DENTRO DE LA VENTANA DEL INICIO)
+def mostrar_tablero(contenedor, volver):
 
-nivel_var = tk.StringVar(value="Intermedio")
+    global engine, canvas, status, analysis_text, nivel_var
 
-menu_nivel = tk.OptionMenu(controles, nivel_var, *NIVELES.keys())
-menu_nivel.config(font=("Arial", 12), width=12)
-menu_nivel.pack(side="left", padx=(0, 20))
+    if engine is None:
+        engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 
-new_button = tk.Button(
-    controles,
-    text="Nueva partida",
-    font=("Arial", 12),
-    command=new_game
-)
-new_button.pack(side="left")
+    contenedor.columnconfigure(0, weight=1)
+    contenedor.rowconfigure(0, weight=1)
+
+    # parte izquierda: estado, tablero y controles
+    left = ctk.CTkFrame(contenedor, fg_color=FONDO)
+    left.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+    left.columnconfigure(0, weight=1)
+    left.rowconfigure(1, weight=1)
+
+    status = ctk.CTkLabel(left, text="Tu turno de jugar - Blancas", font=("Segoe UI", 18, "bold"),
+                          text_color="white")
+    status.grid(row=0, column=0, pady=10)
+
+    canvas = tk.Canvas(left, bg=FONDO, highlightthickness=0)
+    canvas.grid(row=1, column=0, sticky="nsew")
+    canvas.bind("<Button-1>", on_square_click)
+    canvas.bind("<Configure>", lambda event: update_board())
+
+    controles = ctk.CTkFrame(left, fg_color=FONDO)
+    controles.grid(row=2, column=0, pady=10)
+
+    ctk.CTkButton(controles, text="← Inicio", font=("Segoe UI", 14, "bold"), fg_color=FONDO,
+                  hover_color="#2E1A33", border_color=MORADO_BOTON, border_width=2,
+                  corner_radius=12, width=110, command=volver).pack(side="left", padx=(0, 20))
+
+    ctk.CTkLabel(controles, text="Nivel:", font=("Segoe UI", 14),
+                 text_color="white").pack(side="left", padx=(0, 6))
+
+    nivel_var = ctk.StringVar(value="Intermedio")
+    ctk.CTkOptionMenu(controles, variable=nivel_var, values=list(NIVELES.keys()),
+                      font=("Segoe UI", 14), fg_color=OSCURA, button_color=MORADO_BOTON,
+                      button_hover_color=OSCURA, corner_radius=12,
+                      width=150).pack(side="left", padx=(0, 20))
+
+    ctk.CTkButton(controles, text="Nueva partida", font=("Segoe UI", 14, "bold"),
+                  fg_color=MORADO_BOTON, hover_color=OSCURA, corner_radius=12,
+                  command=new_game).pack(side="left")
+
+    # parte derecha: análisis de Stockfish
+    right = ctk.CTkFrame(contenedor, fg_color=PANEL, corner_radius=16, width=380)
+    right.grid(row=0, column=1, sticky="ns", padx=(0, 10), pady=10)
+    right.pack_propagate(False)
+
+    ctk.CTkLabel(right, text="Análisis del módulo", font=("Segoe UI", 16, "bold"),
+                 fg_color="#510043", text_color="white", corner_radius=10,
+                 height=36).pack(fill="x", padx=12, pady=12)
+
+    analysis_text = ctk.CTkTextbox(right, fg_color=PANEL, text_color="white",
+                                   font=("Consolas", 13), wrap="word", state="disabled")
+    analysis_text.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+    new_game()
 
 
-
-def close_app():
-
-    engine.quit()
-    root.destroy()
-
-
-root.protocol("WM_DELETE_WINDOW", close_app)
+# CERRAR EL MOTOR AL SALIR DE LA APP
+def cerrar_motor():
+    if engine is not None:
+        engine.quit()
 
 
-update_board()
-root.update_idletasks()
-analizar_posicion()
+# PARA PROBAR EL TABLERO SOLO (python tablero.py)
+if __name__ == "__main__":
 
-root.mainloop()
+    ctk.set_appearance_mode("dark")
+    root = ctk.CTk()
+    root.title("Kingship")
+    root.geometry("1100x700")
+    root.minsize(800, 500)
+    root.configure(fg_color=FONDO)
+
+    def close_app():
+        cerrar_motor()
+        root.destroy()
+
+    root.protocol("WM_DELETE_WINDOW", close_app)
+    mostrar_tablero(root, close_app)
+    root.mainloop()

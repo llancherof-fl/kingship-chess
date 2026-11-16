@@ -1,9 +1,7 @@
-import subprocess
-import sys
-
 import customtkinter as ctk
 
 from campeon import mostrar_campeon
+from tablero import cerrar_motor, mostrar_tablero
 
 # COLORES (LOS MISMOS DEL TABLERO)
 FONDO = "#282828"
@@ -29,7 +27,19 @@ def volver():
 
 
 def jugar():
-    subprocess.Popen([sys.executable, "tablero.py"])
+    inicio.pack_forget()
+    if not pantalla_tablero.winfo_children():
+        mostrar_tablero(pantalla_tablero, volver_del_tablero)
+    pantalla_tablero.pack(fill="both", expand=True)
+
+
+def volver_del_tablero():
+    pantalla_tablero.pack_forget()
+    inicio.pack(fill="both", expand=True)
+
+
+def salir():
+    cerrar_motor()
     ventana.destroy()
 
 
@@ -60,6 +70,7 @@ ventana = ctk.CTk()
 ventana.title("Kingship")
 ventana.geometry("1100x700")
 ventana.configure(fg_color=FONDO)
+ventana.protocol("WM_DELETE_WINDOW", salir)
 
 # PIE DE PAGINA Y FRANJA (SIEMPRE VISIBLES)
 ctk.CTkLabel(ventana, text="Proyecto final · Matemáticas Discretas · Universidad del Norte · 2026",
@@ -77,6 +88,7 @@ for i in range(40):
 # PANTALLAS
 inicio = ctk.CTkFrame(ventana, fg_color=FONDO)
 pantalla_campeon = ctk.CTkFrame(ventana, fg_color=FONDO)
+pantalla_tablero = ctk.CTkFrame(ventana, fg_color=FONDO)
 inicio.pack(fill="both", expand=True)
 
 # TITULO
@@ -108,6 +120,6 @@ ctk.CTkButton(botones, text="Jugar", font=("Segoe UI", 21, "bold"), fg_color=MOR
 ctk.CTkButton(botones, text="Salir", font=("Segoe UI", 21, "bold"), fg_color=FONDO,
               hover_color=TARJETA, border_color=MORADO_BOTON, border_width=2,
               corner_radius=14, width=230, height=58,
-              command=ventana.destroy).pack(side="left", padx=12)
+              command=salir).pack(side="left", padx=12)
 
 ventana.mainloop()
