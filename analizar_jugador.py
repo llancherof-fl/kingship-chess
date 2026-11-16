@@ -9,6 +9,10 @@ del jugador; no hace falta 'campeon', 'partida' ni 'anio').
 Funciona con 1 partida o con muchas. Cuantas menos partidas, menos fiable es el resultado,
 y el programa lo avisa usando el acierto medido durante el entrenamiento.
 """
+<<<<<<< HEAD
+=======
+import os
+>>>>>>> a841f4f86376f88b34e4cd1196c47e8400e7676f
 import sys
 
 import numpy as np
@@ -39,6 +43,59 @@ def barra(valor, ancho=20):
     llenos = int(round(valor * ancho))
     return "█" * llenos + "·" * (ancho - llenos)
 
+<<<<<<< HEAD
+=======
+def analizar_archivo(ruta):
+    if not os.path.exists(ruta):
+        print("No se encuentra el archivo:", ruta)
+        return
+
+    modelo = torch.load(RUTA_MODELO, map_location="cpu")
+    columnas = modelo["columnas"]
+    clases = modelo["clases"]
+    fiabilidad = modelo["fiabilidad"]
+
+
+    d = pd.read_csv(ruta)
+    
+    faltan = [c for c in columnas if c not in d.columns]
+    if faltan:
+        print("Faltan estas columnas en el CSV:", faltan)
+        return
+    d = d.dropna(subset=columnas)
+    n = len(d)
+    if n == 0:
+        print("El CSV no tiene partidas válidas.")
+        return
+    
+    # mismo escalado que en el entrenamiento
+    X = (d[columnas].values - np.array(modelo["media"])) / np.array(modelo["escala"])
+    X = torch.tensor(X, dtype=torch.float32)
+    
+    red = RedEstilo(columnas, len(clases))
+    red.load_state_dict(modelo["estado"])
+    red.eval()
+    
+    with torch.no_grad():
+        P = torch.softmax(red(X), dim=1).numpy()      # probabilidades por partida
+        perfil = red.perfil(X).numpy()                # 10 nodos por partida
+    
+    prob = P.mean(axis=0)                             # resultado conjunto
+    perfil_medio = perfil.mean(axis=0)
+    
+    etiqueta, acierto, k = nivel_fiabilidad(n, fiabilidad)
+
+    return {
+        "partidas": n,
+        "etiqueta": etiqueta,
+        "acierto": acierto,
+        "ventana": k,
+        "campeones": clases,
+        "probabilidades": prob,
+        "perfil": perfil_medio
+    }
+
+>>>>>>> a841f4f86376f88b34e4cd1196c47e8400e7676f
 
 def main():
     if len(sys.argv) < 2:

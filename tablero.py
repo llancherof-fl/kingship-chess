@@ -1,5 +1,3 @@
-"""Tablero de Kingship: juega contra Stockfish, arrastra las piezas y guarda tus partidas.
-Se dibuja dentro de la ventana de inicio.py (mostrar_tablero). También se puede abrir solo:  python tablero.py [usuario]"""
 import datetime
 import os
 import sys
