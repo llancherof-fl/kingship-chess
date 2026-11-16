@@ -8,5 +8,10 @@
     "nombre": "aaa",
     "sal": "566f959b9a6c3abfb0fe8be20a9441ba",
     "hash": "80c70985d45e0e95601c317150c9e595575aa1f6a54fd3a7e0169548cc09dc97"
+  },
+  "1111": {
+    "nombre": "1111",
+    "sal": "43030a545cefa885bb06dc23ea7af4d0",
+    "hash": "9ef1a9545dc8d183075af2b1c649652e0ae5d8a27feaa1f12c2a4bb7a4039dc4"
   }
 }

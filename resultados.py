@@ -105,7 +105,7 @@ def mostrar_fiabilidad(padre, etiqueta, acierto, partidas):
     color = {"FIABLE": "#269B63", "FIABILIDAD MEDIA": "#D99A00",
              "POCO FIABLE": "#C94B55"}.get(etiqueta, "#777777")
     panel = ctk.CTkFrame(padre, fg_color="transparent", corner_radius=0)
-    panel.pack(fill="x", padx=203, pady=15)
+    panel.pack(fill="x", padx=191, pady=15)
     ctk.CTkLabel(panel, text="Fiabilidad del análisis", font=BODYBOLD,
                  text_color=NEGRO).pack(anchor="w", padx=25, pady=(20, 5))
     fila = ctk.CTkFrame(panel, fg_color="transparent")
@@ -216,42 +216,42 @@ def mostrar_resultados(contenedor, usuario, volver, reintentar):
     # descripción
     ctk.CTkLabel(pagina, text=f"Tu estilo de juego es similar a: {c['nombre']} ({resultado[campeon]:.0f}%)",
                  font=SUBTITLE, text_color=MORADO).pack(pady=(85, 21))
-    ctk.CTkFrame(pagina, fg_color="#D9A8EE", height=1, width=764).pack(padx=203, anchor="w")
-    ctk.CTkLabel(pagina, text=texto_explicacion(campeon, estilo, n), wraplength=764, justify="left",
-                 text_color=TEXTO, font=BODY).pack(pady=21, padx=203, anchor="w")
+    ctk.CTkFrame(pagina, fg_color="#D9A8EE", height=1, width=718).pack(padx=191, anchor="w")
+    ctk.CTkLabel(pagina, text=texto_explicacion(campeon, estilo, n), wraplength=718, justify="left",
+                 text_color=TEXTO, font=BODY).pack(pady=21, padx=191, anchor="w")
 
     mostrar_fiabilidad(pagina, r["etiqueta"], r["acierto"], n)
 
     # top 3 partidas (según el estilo promedio de todas tus partidas)
     ctk.CTkLabel(pagina, text="Top 3 partidas recomendadas", font=BODYBOLD,
-                 text_color=NEGRO).pack(anchor="w", padx=203, pady=(21, 10))
+                 text_color=NEGRO).pack(anchor="w", padx=191, pady=(21, 10))
     ctk.CTkLabel(pagina, text="Utiliza estas partidas como referencia para estudiar nuevas jugadas, "
                  "descubrir estrategias y mejorar tu toma de decisiones en el tablero.",
-                 wraplength=764, justify="left", font=BODY, text_color=TEXTO).pack(anchor="w", padx=203, pady=(0, 21))
+                 wraplength=718, justify="left", font=BODY, text_color=TEXTO).pack(anchor="w", padx=191, pady=(0, 21))
     fila = ctk.CTkFrame(pagina, fg_color=BLANCO)
-    fila.pack(fill="x", padx=203)
+    fila.pack(fill="x", padx=191)
     for i, p in enumerate(partidas_similares(campeon, r["x"]), 1):
         tarjeta_partida(fila, i, p)
 
     # volver a jugar
     bloque = ctk.CTkFrame(pagina, fg_color=BLANCO)
-    bloque.pack(pady=(51, 10), padx=203)
+    bloque.pack(pady=(51, 10), padx=191)
     ctk.CTkLabel(bloque, image=para_ctk("twoPieces.png", PIEZAS, (0, 0, 0, 0)), text="").pack(side="left")
     txt = ctk.CTkFrame(bloque, fg_color=BLANCO)
     txt.pack(side="left")
     ctk.CTkLabel(txt, text="¿Quieres intentar otra partida?", font=BODYBOLD,
                  text_color=NEGRO).pack(anchor="w", padx=21)
     ctk.CTkLabel(txt, text="Cada partida que guardes mejora la fiabilidad de tu análisis.", font=BODY,
-                 text_color=GRIS, wraplength=620, justify="left").pack(anchor="w", pady=6, padx=21)
+                 text_color=GRIS, wraplength=583, justify="left").pack(anchor="w", pady=6, padx=21)
     ctk.CTkButton(txt, text="Volver a intentar →", font=BODY, fg_color=NARANJA, text_color=NEGRO,
                   hover_color="#D99700", corner_radius=20, width=170, height=36,
                   command=reintentar).pack(anchor="w", padx=21)
 
     # detalle de la red
     ctk.CTkLabel(pagina, text="Procesos y cálculo de red neuronal", font=BODYBOLD,
-                 text_color=NEGRO).pack(anchor="w", padx=203, pady=(20, 8))
+                 text_color=NEGRO).pack(anchor="w", padx=191, pady=(20, 8))
     caja = ctk.CTkFrame(pagina, fg_color="transparent", corner_radius=0, border_width=0)
-    caja.pack(fill="x", padx=203, pady=(0, 30))
+    caja.pack(fill="x", padx=191, pady=(0, 30))
     ctk.CTkLabel(caja, text="Parecido con cada campeón", font=BODYBOLD,
                  text_color=MORADO).pack(pady=(14, 4), padx=30, anchor="w")
     for nombre, v in sorted(resultado.items(), key=lambda kv: -kv[1]):

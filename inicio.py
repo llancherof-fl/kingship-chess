@@ -55,10 +55,7 @@ def volver_tablero():
     inicio.pack(fill="both", expand=True)
 
 def modo_resultados(activo):
-    # la pantalla de resultados es clara y más ancha que el menú
     ctk.set_appearance_mode("light" if activo else "dark")
-    ventana.geometry("1210x760" if activo else "1100x740")
-
 
 def cerrar_resultados():
     pantalla_resultados.pack_forget()
@@ -83,8 +80,8 @@ def ver_resultados():
     if not usuarios.listar_partidas(usuario):
         messagebox.showinfo("Kingship", "Todavía no tienes partidas guardadas.")
         return
-    from resultados import mostrar_resultados      # carga la red solo al abrir esta pantalla
-    if cerrar_tablero:                              # apaga Stockfish si venías del tablero
+    from resultados import mostrar_resultados      
+    if cerrar_tablero:                          
         cerrar_tablero()
         cerrar_tablero = None
     inicio.pack_forget()
