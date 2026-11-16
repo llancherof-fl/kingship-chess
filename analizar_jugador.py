@@ -9,10 +9,7 @@ del jugador; no hace falta 'campeon', 'partida' ni 'anio').
 Funciona con 1 partida o con muchas. Cuantas menos partidas, menos fiable es el resultado,
 y el programa lo avisa usando el acierto medido durante el entrenamiento.
 """
-<<<<<<< HEAD
-=======
 import os
->>>>>>> a841f4f86376f88b34e4cd1196c47e8400e7676f
 import sys
 
 import numpy as np
@@ -43,8 +40,6 @@ def barra(valor, ancho=20):
     llenos = int(round(valor * ancho))
     return "█" * llenos + "·" * (ancho - llenos)
 
-<<<<<<< HEAD
-=======
 def analizar_archivo(ruta):
     if not os.path.exists(ruta):
         print("No se encuentra el archivo:", ruta)
@@ -95,7 +90,6 @@ def analizar_archivo(ruta):
         "perfil": perfil_medio
     }
 
->>>>>>> a841f4f86376f88b34e4cd1196c47e8400e7676f
 
 def main():
     if len(sys.argv) < 2:
