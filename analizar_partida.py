@@ -46,11 +46,11 @@ def analizar_partida(ruta_pgn, color=0):
     for i in range(len(nombres)):
         estilo[nombres[i]] = round(perfil[i].item() * 100)
 
-    return resultado, estilo
+    return resultado, estilo, x[0].numpy()
 
 
 # PRUEBA
 if __name__ == "__main__":
-    resultado, estilo = analizar_partida("prueba.pgn")
+    resultado, estilo, x = analizar_partida("prueba.pgn")
     print("Parecido con cada campeon:", resultado)
     print("Perfil de estilo:", estilo)

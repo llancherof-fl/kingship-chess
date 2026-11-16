@@ -52,7 +52,7 @@ def imagen(pieza, tam):
     return cache[clave]
 
 
-def mostrar_tablero(raiz, contenedor, usuario, volver):
+def mostrar_tablero(raiz, contenedor, usuario, volver, resultados = None):
     """Dibuja el tablero dentro de `contenedor` (un frame de la ventana `raiz`).
     usuario: nombre de la cuenta (None = no se guardan partidas).  volver: función que muestra el menú.
     Devuelve cerrar(): apaga Stockfish (llámala si se cierra la ventana)."""
@@ -109,6 +109,7 @@ def mostrar_tablero(raiz, contenedor, usuario, volver):
     boton("Nueva partida", lambda: nueva())
     boton("Guardar partida", lambda: guardar(), relleno=False)
     boton("← Menú", lambda: salir(), relleno=False)
+    boton("Ver resultados", lambda: ver_resultados(), relleno=False)
     mensaje = ctk.CTkLabel(der, text="", font=("Segoe UI", 13), text_color="#B98CC4", wraplength=280)
     mensaje.pack(pady=(8, 0))
     etiqueta("JUGADAS")
@@ -420,6 +421,15 @@ def mostrar_tablero(raiz, contenedor, usuario, volver):
         usuarios.guardar_pgn(usuario, str(g))
         guardada = True
         avisar("Partida terminada y guardada ✓" if auto else "Partida guardada ✓")
+        
+    def ver_resultados():
+        if not usuario:
+            avisar("Entra con tu cuenta desde el menú para ver resultados.")
+            return
+        if board.move_stack and not guardada:
+            guardar()                      # guarda la partida actual para que cuente en el análisis
+        if resultados:
+            resultados()  
 
 
     def nueva():

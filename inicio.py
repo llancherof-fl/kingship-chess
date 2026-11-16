@@ -1,6 +1,8 @@
 import customtkinter as ctk
 
 import usuarios
+import os, subprocess, sys
+from tkinter import messagebox
 from campeon import mostrar_campeon
 
 # COLORES (LOS MISMOS DEL TABLERO)
@@ -10,6 +12,7 @@ TARJETA_HOVER = "#45264D"
 MORADO = "#8B5696"
 MORADO_BOTON = "#7B3FD6"
 CREMA = "#EEEED2"
+BLANCO_RES = "#FCFCFD"
 
 usuario = None          # cuenta con la sesión iniciada
 cerrar_tablero = None   # apaga Stockfish si cierras la ventana jugando
@@ -38,8 +41,10 @@ def jugar():
     for elemento in pantalla_tablero.winfo_children():
         elemento.destroy()
     # el tablero se arma antes de ocultar el menú: si algo falla (p. ej. Stockfish), el menú sigue visible
-    cerrar_tablero = mostrar_tablero(ventana, pantalla_tablero, usuario, volver_tablero)
+    cerrar_tablero = mostrar_tablero(ventana, pantalla_tablero, usuario, volver_tablero, ver_resultados)
+    
     inicio.pack_forget()
+
     pantalla_tablero.pack(fill="both", expand=True)
 
 
@@ -48,6 +53,47 @@ def volver_tablero():
     cerrar_tablero = None
     pantalla_tablero.pack_forget()
     inicio.pack(fill="both", expand=True)
+
+def modo_resultados(activo):
+    # la pantalla de resultados es clara y más ancha que el menú
+    ctk.set_appearance_mode("light" if activo else "dark")
+    ventana.geometry("1210x760" if activo else "1100x740")
+
+
+def cerrar_resultados():
+    pantalla_resultados.pack_forget()
+    modo_resultados(False)
+
+
+def volver_resultados():
+    cerrar_resultados()
+    inicio.pack(fill="both", expand=True)
+
+
+def reintentar_resultados():
+    cerrar_resultados()
+    jugar()
+
+
+def ver_resultados():
+    global cerrar_tablero
+    if usuario is None:
+        abrir_login(ver_resultados)
+        return
+    if not usuarios.listar_partidas(usuario):
+        messagebox.showinfo("Kingship", "Todavía no tienes partidas guardadas.")
+        return
+    from resultados import mostrar_resultados      # carga la red solo al abrir esta pantalla
+    if cerrar_tablero:                              # apaga Stockfish si venías del tablero
+        cerrar_tablero()
+        cerrar_tablero = None
+    inicio.pack_forget()
+    pantalla_tablero.pack_forget()
+    for elemento in pantalla_resultados.winfo_children():
+        elemento.destroy()
+    modo_resultados(True)
+    mostrar_resultados(pantalla_resultados, usuario, volver_resultados, reintentar_resultados)
+    pantalla_resultados.pack(fill="both", expand=True)
 
 
 def salir():
@@ -146,6 +192,7 @@ for i in range(40):
 inicio = ctk.CTkFrame(ventana, fg_color=FONDO)
 pantalla_campeon = ctk.CTkFrame(ventana, fg_color=FONDO)
 pantalla_tablero = ctk.CTkFrame(ventana, fg_color=FONDO)
+pantalla_resultados = ctk.CTkFrame(ventana, fg_color=BLANCO_RES)
 inicio.pack(fill="both", expand=True)
 
 # BARRA DE SESION (arriba a la derecha)
@@ -191,11 +238,15 @@ ctk.CTkLabel(inicio, text="Haz clic en un campeón para conocerlo", font=("Segoe
 botones = ctk.CTkFrame(inicio, fg_color=FONDO)
 botones.pack()
 ctk.CTkButton(botones, text="Jugar", font=("Segoe UI", 21, "bold"), fg_color=MORADO_BOTON,
-              hover_color=MORADO, corner_radius=14, width=230, height=58,
+              hover_color=MORADO, corner_radius=14, width=200, height=58,
               command=jugar).pack(side="left", padx=12)
 ctk.CTkButton(botones, text="Salir", font=("Segoe UI", 21, "bold"), fg_color=FONDO,
               hover_color=TARJETA, border_color=MORADO_BOTON, border_width=2,
-              corner_radius=14, width=230, height=58,
+              corner_radius=14, width=200, height=58,
               command=salir).pack(side="left", padx=12)
+ctk.CTkButton(botones, text="Mis resultados", font=("Segoe UI", 21, "bold"), fg_color=FONDO,
+              hover_color=TARJETA, border_color=MORADO_BOTON, border_width=2,
+              corner_radius=14, width=200, height=58,
+              command=ver_resultados).pack(side="left", padx=12)
 
 ventana.mainloop()

@@ -79,6 +79,9 @@ def analizar_archivo(ruta):
     perfil_medio = perfil.mean(axis=0)
     
     etiqueta, acierto, k = nivel_fiabilidad(n, fiabilidad)
+    X = (d[columnas].values - np.array(modelo["media"])) / np.array(modelo["escala"])
+    x_medio = X.mean(axis=0)                 # <-- nuevo
+    X = torch.tensor(X, dtype=torch.float32)
 
     return {
         "partidas": n,
@@ -87,7 +90,8 @@ def analizar_archivo(ruta):
         "ventana": k,
         "campeones": clases,
         "probabilidades": prob,
-        "perfil": perfil_medio
+        "perfil": perfil_medio,
+        "x": x_medio
     }
 
 
