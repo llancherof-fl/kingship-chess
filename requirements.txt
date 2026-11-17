@@ -1,0 +1,7 @@
+chess
+numpy
+pandas
+scikit-learn
+torch
+customtkinter
+pillow
