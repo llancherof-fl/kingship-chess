@@ -1,10 +1,9 @@
 import os
-import tkinter as tk
 
 import customtkinter as ctk
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw, ImageOps, ImageTk
+from PIL import Image, ImageDraw, ImageOps
 
 import analizar_jugador
 import usuarios
@@ -15,63 +14,79 @@ from capa1 import DIMENSIONES
 ctk.set_widget_scaling(1.0)
 ctk.set_window_scaling(1.0)
 
-# COLORES
-BLANCO = "#FCFCFD"
-MORADO = "#550469"
-MORADO_CLARO = "#8B5696"
-NEGRO = "#101010"
-NARANJA = "#F5A800"
-TEXTO = "#4E4E4E"
-GRIS = "#666666"
+# COLORES (LOS MISMOS DEL INICIO Y EL TABLERO)
+FONDO = "#282828"
+TARJETA = "#2E1A33"
+TARJETA_HOVER = "#45264D"
+MORADO = "#8B5696"
+MORADO_BOTON = "#7B3FD6"
+LILA = "#B98CC4"
+CREMA = "#EEEED2"
+GRIS = "gray"
+BARRA_FONDO = "#3A3A3A"
 
-# FONTS
-BODY = ("League Spartan", 16)
-BODYBOLD = ("League Spartan", 16, "bold")
-SMALLBODY = ("League Spartan", 12)
-TITLE = ("League Spartan", 58, "bold")
-SUBTITLE = ("League Spartan", 21, "bold")
+# LETRAS (LAS MISMAS DEL INICIO)
+TITULO = ("Georgia", 40, "bold")
+SUBTITULO = ("Georgia", 22, "bold")
+CUERPO = ("Segoe UI", 15)
+CUERPO_BOLD = ("Segoe UI", 15, "bold")
+PEQUENA = ("Segoe UI", 13)
+
+# NOMBRES BONITOS DE LOS NODOS
+NOMBRES = {
+    "actividad": "Actividad",
+    "desarrollo": "Desarrollo",
+    "posicion_armonica": "Posición armónica",
+    "agresividad": "Agresividad",
+    "tactica": "Táctica",
+    "estrategia": "Estrategia",
+    "apertura": "Apertura",
+    "defensa": "Defensa",
+    "casillas_debiles": "Casillas débiles",
+    "tecnica_medio": "Técnica en el medio juego",
+}
 
 # MEDIDAS
-BANNER = (1170, 345)
-FOOTER = (1170, 355)
-FOTO = (272, 324)
-PIEZAS = (115, 115)
-CARD = (244, 220)
+FOTO = (230, 274)
 MINI = (90, 90)
-CORONA = (33, 33)
+PIEZAS = (90, 90)
+LOGO = (30, 30)
+MARGEN = 110
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 CARPETA = os.path.join(AQUI, "imagenes")
 
 
-def abrir(nombre, tam, relleno="#D9A8EE"):
+# IMAGENES
+def abrir(nombre, tam, relleno=TARJETA):
     ruta = os.path.join(CARPETA, nombre)
     if os.path.exists(ruta):
         return Image.open(ruta).convert("RGBA").resize(tam, Image.LANCZOS)
     return Image.new("RGBA", tam, relleno)
 
 
-def tablero_img():
-    return ImageTk.PhotoImage(abrir("tablero.png", MINI))
-
-
-def foto_hero(campeon, tam=FOTO):
-    propia = os.path.join(CARPETA, f"{campeon.lower()}.png")
-    if os.path.exists(propia):
-        im = ImageOps.fit(Image.open(propia).convert("RGBA"), tam, Image.LANCZOS)
-        mascara = Image.new("L", tam, 0)
-        ImageDraw.Draw(mascara).rounded_rectangle((0, 0, tam[0], tam[1]), 30, fill=255)
-        im.putalpha(mascara)
-    else:
-        im = abrir("foto.png", tam, (0, 0, 0, 0))
-    return ImageTk.PhotoImage(im)
-
-
-def para_ctk(nombre, tam, relleno="#D9A8EE"):
+def para_ctk(nombre, tam, relleno=(0, 0, 0, 0)):
     im = abrir(nombre, (tam[0] * 2, tam[1] * 2), relleno)
     return ctk.CTkImage(light_image=im, dark_image=im, size=tam)
 
 
+def foto_campeon(campeon, tam=FOTO):
+    ruta = os.path.join(CARPETA, f"{campeon.lower()}.png")
+    if os.path.exists(ruta):
+        im = ImageOps.fit(Image.open(ruta).convert("RGBA"), (tam[0] * 2, tam[1] * 2), Image.LANCZOS)
+    else:
+        im = Image.new("RGBA", (tam[0] * 2, tam[1] * 2), MORADO)
+    mascara = Image.new("L", im.size, 0)
+    ImageDraw.Draw(mascara).rounded_rectangle((0, 0, im.size[0], im.size[1]), 40, fill=255)
+    im.putalpha(mascara)
+    return ctk.CTkImage(light_image=im, dark_image=im, size=tam)
+
+
+def coma(valor, decimales=1):
+    return f"{valor:.{decimales}f}".replace(".", ",")
+
+
+# PARTIDAS PARECIDAS (VECINOS MAS CERCANOS)
 def partidas_similares(campeon, x, n=3):
     d = pd.read_csv(os.path.join(AQUI, "base_entrenamiento.csv")).drop_duplicates()
     d = d[d["campeon"] == campeon].copy()
@@ -82,7 +97,7 @@ def partidas_similares(campeon, x, n=3):
 
 def texto_explicacion(campeon, estilo, n):
     top = sorted(estilo, key=estilo.get, reverse=True)[:3]
-    nombres = [t.replace("_", " ") for t in top]
+    nombres = [NOMBRES.get(t, t).lower() for t in top]
     base = "tu partida" if n == 1 else f"tus {n} partidas"
     return (f"Analizando {base}, tus dimensiones más marcadas fueron {nombres[0]}, "
             f"{nombres[1]} y {nombres[2]}. Esa combinación se parece al juego de "
@@ -90,96 +105,81 @@ def texto_explicacion(campeon, estilo, n):
             f"{datos[campeon]['estilo'].lower()}.")
 
 
-def barra(padre, texto, valor, color=MORADO):
+# PIEZAS DE LA PAGINA
+def caja(padre, **extra):
+    marco = ctk.CTkFrame(padre, fg_color=TARJETA, border_color=MORADO, border_width=2,
+                         corner_radius=20, **extra)
+    return marco
+
+
+def titulo_seccion(padre, texto):
+    ctk.CTkLabel(padre, text=texto, font=SUBTITULO, text_color=CREMA).pack(
+        anchor="w", padx=MARGEN, pady=(34, 12))
+
+
+def barra(padre, texto, valor, color=MORADO_BOTON):
     fila = ctk.CTkFrame(padre, fg_color="transparent")
-    fila.pack(fill="x", padx=30, pady=3)
-    ctk.CTkLabel(fila, text=texto, width=150, anchor="w", text_color=TEXTO,
-                 font=("League Spartan", 14)).pack(side="left")
-    b = ctk.CTkProgressBar(fila, progress_color=color, fg_color="#E9CFF5", height=12)
+    fila.pack(fill="x", padx=28, pady=4)
+    ctk.CTkLabel(fila, text=texto, width=210, anchor="w", text_color=CREMA,
+                 font=CUERPO).pack(side="left")
+    b = ctk.CTkProgressBar(fila, progress_color=color, fg_color=BARRA_FONDO, height=12,
+                           corner_radius=6)
     b.set(valor / 100)
-    b.pack(side="left", fill="x", expand=True, padx=10)
-    ctk.CTkLabel(fila, text=f"{valor:.0f}%", width=50, text_color=TEXTO).pack(side="left")
+    b.pack(side="left", fill="x", expand=True, padx=12)
+    ctk.CTkLabel(fila, text=f"{valor:.0f} %", width=55, anchor="e", text_color=LILA,
+                 font=CUERPO_BOLD).pack(side="left")
 
 
 def mostrar_fiabilidad(padre, etiqueta, acierto, partidas):
-    color = {"FIABLE": "#269B63", "FIABILIDAD MEDIA": "#D99A00",
-             "POCO FIABLE": "#C94B55"}.get(etiqueta, "#777777")
-    panel = ctk.CTkFrame(padre, fg_color="transparent", corner_radius=0)
-    panel.pack(fill="x", padx=191, pady=15)
-    ctk.CTkLabel(panel, text="Fiabilidad del análisis", font=BODYBOLD,
-                 text_color=NEGRO).pack(anchor="w", padx=25, pady=(20, 5))
+    color = {"FIABLE": "#4CAF7A", "FIABILIDAD MEDIA": "#E0B23C",
+             "POCO FIABLE": "#E5534B"}.get(etiqueta, GRIS)
+    panel = caja(padre)
+    panel.pack(fill="x", padx=MARGEN)
     fila = ctk.CTkFrame(panel, fg_color="transparent")
-    fila.pack(fill="x", padx=25)
-    ctk.CTkLabel(fila, text=f"{acierto * 100:.1f}%", font=("League Spartan", 38, "bold"),
+    fila.pack(fill="x", padx=28, pady=(22, 4))
+    ctk.CTkLabel(fila, text=f"{coma(acierto * 100)} %", font=("Georgia", 40, "bold"),
                  text_color=color).pack(side="left")
-    ctk.CTkLabel(fila, text=etiqueta, font=BODYBOLD, text_color=color).pack(side="left", padx=15)
-    progreso = ctk.CTkProgressBar(panel, height=13, progress_color=color,
-                                  fg_color="#E9CFF5", corner_radius=10)
+    ctk.CTkLabel(fila, text=etiqueta, font=("Segoe UI", 15, "bold"), text_color="white",
+                 fg_color=color, corner_radius=14, height=30).pack(side="left", padx=18, ipadx=10)
+    progreso = ctk.CTkProgressBar(panel, height=14, progress_color=color,
+                                  fg_color=BARRA_FONDO, corner_radius=7)
     progreso.set(acierto)
-    progreso.pack(fill="x", padx=25, pady=(10, 8))
-    ctk.CTkLabel(panel, text=f"Evaluación basada en {partidas} partida(s).",
-                 font=SMALLBODY, text_color=GRIS).pack(anchor="w", padx=25, pady=(0, 20))
+    progreso.pack(fill="x", padx=28, pady=(10, 8))
+    texto = "1 partida" if partidas == 1 else f"{partidas} partidas"
+    ctk.CTkLabel(panel, text=f"Evaluación basada en {texto}. Entre más partidas juegues, más confiable es el resultado.",
+                 font=PEQUENA, text_color=GRIS, wraplength=700, justify="left").pack(
+        anchor="w", padx=28, pady=(0, 20))
 
 
-def tarjeta_partida(padre, numero, texto):
-    cv = tk.Canvas(padre, width=CARD[0], height=CARD[1], bg=BLANCO, highlightthickness=0)
-    cv.pack(side="left", fill="both", expand=True, padx=10)
-
-    def redibujar(e):
-        w, h = e.width, e.height
-        if w < 50 or h < 50:
-            return
-        cv.delete("all")
-        fondo = ImageTk.PhotoImage(abrir("tarjeta.png", (w, h)))
-        mini = tablero_img()
-        cv.imagenes = [fondo, mini]
-        cv.create_image(0, 0, anchor="nw", image=fondo)
-        cv.create_text(w / 2, 26, text=f"Partida {numero}", fill=NEGRO, font=BODYBOLD)
-        cv.create_image(w / 2, 108, image=mini)
-        cv.create_text(w / 2, 184, text=texto, fill=TEXTO, width=w - 35,
-                       font=SMALLBODY, justify="center")
-
-    cv.bind("<Configure>", redibujar)
+def tarjeta_partida(padre, numero, texto, mini):
+    tarjeta = caja(padre)
+    tarjeta.pack(side="left", fill="both", expand=True, padx=8)
+    ctk.CTkLabel(tarjeta, text=f"Partida {numero}", font=CUERPO_BOLD,
+                 text_color=CREMA).pack(pady=(18, 8))
+    ctk.CTkLabel(tarjeta, image=mini, text="").pack()
+    ctk.CTkLabel(tarjeta, text=texto, font=PEQUENA, text_color=LILA, wraplength=200,
+                 justify="center").pack(padx=14, pady=(10, 18))
 
 
-def lienzo_imagen(padre, nombre, base, relleno, extra=None):
-    cv = tk.Canvas(padre, height=base[1], bg=BLANCO, highlightthickness=0)
-    cv.pack(fill="x")
-    cv.ultimo = 0
-
-    def redibujar(e):
-        w = e.width
-        if w < 50 or w == cv.ultimo:
-            return
-        cv.ultimo = w
-        esc = w / base[0]
-        h = int(base[1] * esc)
-        cv.config(height=h)
-        cv.delete("all")
-        fondo = ImageTk.PhotoImage(abrir(nombre, (w, h), relleno))
-        cv.imagenes = [fondo]
-        cv.create_image(0, 0, anchor="nw", image=fondo)
-        if extra:
-            extra(cv, esc, w)
-
-    cv.bind("<Configure>", redibujar)
-    return cv
-
-
-# PANTALLA DE RESULTADOS (se dibuja dentro de `contenedor`)
+# PANTALLA DE RESULTADOS (SE DIBUJA DENTRO DE LA MISMA VENTANA)
 def mostrar_resultados(contenedor, usuario, volver, reintentar):
-    
-    barra_sup = ctk.CTkFrame(contenedor, fg_color=BLANCO, height=48, corner_radius=0)
-    barra_sup.pack(fill="x")
-    ctk.CTkLabel(barra_sup, image=para_ctk("logo.png", CORONA, (0, 0, 0, 0)), text="").pack(
-        side="left", padx=(40, 8), pady=8)
-    ctk.CTkLabel(barra_sup, text=f"Kingship Resultados · {usuario}", font=("League Spartan", 18, "bold"),
-                 text_color=MORADO).pack(side="left")
-    ctk.CTkButton(barra_sup, text="← Menú", font=BODY, fg_color=BLANCO, text_color=MORADO,
-                  hover_color="#EABDF2", border_color=MORADO, border_width=2, corner_radius=16,
-                  width=110, height=32, command=volver).pack(side="right", padx=40)
 
-    pagina = ctk.CTkScrollableFrame(contenedor, fg_color=BLANCO, corner_radius=0)
+    # barra de arriba
+    barra_sup = ctk.CTkFrame(contenedor, fg_color=FONDO, height=56, corner_radius=0)
+    barra_sup.pack(fill="x")
+    ctk.CTkLabel(barra_sup, text="♚", font=("Segoe UI Symbol", 26), text_color=CREMA).pack(
+        side="left", padx=(40, 8), pady=8)
+    ctk.CTkLabel(barra_sup, text="KINGSHIP", font=("Georgia", 22, "bold"),
+                 text_color=CREMA).pack(side="left")
+    ctk.CTkLabel(barra_sup, text=f"  ·  Resultados de {usuario}", font=CUERPO,
+                 text_color=GRIS).pack(side="left")
+    ctk.CTkButton(barra_sup, text="← Inicio", font=("Segoe UI", 14, "bold"), fg_color=FONDO,
+                  hover_color=TARJETA, border_color=MORADO_BOTON, border_width=2, corner_radius=12,
+                  text_color=CREMA, width=110, height=34, command=volver).pack(side="right", padx=40)
+
+    pagina = ctk.CTkScrollableFrame(contenedor, fg_color=FONDO, corner_radius=0,
+                                    scrollbar_button_color=MORADO,
+                                    scrollbar_button_hover_color=MORADO_BOTON)
     pagina.pack(fill="both", expand=True)
 
     # CSV al día con TODAS las partidas guardadas del usuario y análisis conjunto
@@ -187,11 +187,16 @@ def mostrar_resultados(contenedor, usuario, volver, reintentar):
     r = analizar_jugador.analizar_archivo(ruta_csv)
 
     if r is None:
-        ctk.CTkLabel(pagina, text="Todavía no hay partidas analizables.\n"
-                     "Juega y guarda partidas de al menos 10 jugadas tuyas.",
-                     text_color=TEXTO, font=BODY, justify="center").pack(pady=60)
-        ctk.CTkButton(pagina, text="Jugar →", fg_color=NARANJA, text_color="black",
-                      hover_color="#D99700", command=reintentar).pack()
+        aviso = caja(pagina)
+        aviso.pack(padx=MARGEN, pady=80, fill="x")
+        ctk.CTkLabel(aviso, text="♟", font=("Segoe UI Symbol", 56), text_color=CREMA).pack(pady=(26, 0))
+        ctk.CTkLabel(aviso, text="Todavía no hay partidas analizables", font=SUBTITULO,
+                     text_color=CREMA).pack(pady=(4, 6))
+        ctk.CTkLabel(aviso, text="Juega y guarda partidas de al menos 10 jugadas tuyas.",
+                     font=CUERPO, text_color=GRIS).pack()
+        ctk.CTkButton(aviso, text="Jugar", font=("Segoe UI", 18, "bold"), fg_color=MORADO_BOTON,
+                      hover_color=MORADO, corner_radius=14, width=200, height=48,
+                      command=reintentar).pack(pady=(18, 28))
         return
 
     n = r["partidas"]
@@ -200,66 +205,70 @@ def mostrar_resultados(contenedor, usuario, volver, reintentar):
     campeon = max(resultado, key=resultado.get)
     c = datos[campeon]
 
-    # banner
-    def dibujar_banner(cv, esc, w):
-        foto = foto_hero(campeon, (int(FOTO[0] * esc), int(FOTO[1] * esc)))
-        cv.imagenes.append(foto)
-        cv.create_image(w - int(120 * esc), int(10 * esc), anchor="ne", image=foto)
-        cv.create_text(int(70 * esc), int(120 * esc), anchor="w", text=c["nombre"], fill=MORADO,
-                       font=TITLE, width=int(700 * esc))
-        cv.create_text(int(70 * esc), int(185 * esc), anchor="w",
-                       text=f"{c['titulo']}\nEstilo: {c['estilo']}", fill=NEGRO,
-                       font=SUBTITLE, width=int(560 * esc))
+    # campeon principal
+    principal = caja(pagina)
+    principal.pack(fill="x", padx=MARGEN, pady=(30, 0))
+    texto = ctk.CTkFrame(principal, fg_color="transparent")
+    texto.pack(side="left", fill="both", expand=True, padx=(34, 10), pady=28)
+    ctk.CTkLabel(texto, text="TU ESTILO SE PARECE A", font=("Segoe UI", 13, "bold"),
+                 text_color=LILA).pack(anchor="w")
+    ctk.CTkLabel(texto, text=f"{c['pieza']}  {c['nombre']}", font=TITULO, text_color=CREMA,
+                 wraplength=520, justify="left").pack(anchor="w", pady=(4, 2))
+    ctk.CTkLabel(texto, text=c["titulo"], font=CUERPO, text_color=GRIS).pack(anchor="w")
+    chips = ctk.CTkFrame(texto, fg_color="transparent")
+    chips.pack(anchor="w", pady=(16, 14))
+    ctk.CTkLabel(chips, text="Estilo: " + c["estilo"], font=("Segoe UI", 15, "bold"),
+                 fg_color=MORADO, text_color="white", corner_radius=16, height=34).pack(
+        side="left", ipadx=14)
+    ctk.CTkLabel(chips, text=f"{resultado[campeon]:.0f} % de parecido", font=("Segoe UI", 15, "bold"),
+                 fg_color=MORADO_BOTON, text_color="white", corner_radius=16, height=34).pack(
+        side="left", padx=10, ipadx=14)
+    ctk.CTkLabel(texto, text=texto_explicacion(campeon, estilo, n), wraplength=520, justify="left",
+                 text_color=CREMA, font=CUERPO).pack(anchor="w")
+    ctk.CTkLabel(principal, image=foto_campeon(campeon), text="").pack(side="right", padx=28, pady=24)
 
-    lienzo_imagen(pagina, "banner.png", BANNER, "#EBD0F5", dibujar_banner)
-
-    # descripción
-    ctk.CTkLabel(pagina, text=f"Tu estilo de juego es similar a: {c['nombre']} ({resultado[campeon]:.0f}%)",
-                 font=SUBTITLE, text_color=MORADO).pack(pady=(85, 21))
-    ctk.CTkFrame(pagina, fg_color="#D9A8EE", height=1, width=718).pack(padx=191, anchor="w")
-    ctk.CTkLabel(pagina, text=texto_explicacion(campeon, estilo, n), wraplength=718, justify="left",
-                 text_color=TEXTO, font=BODY).pack(pady=21, padx=191, anchor="w")
-
+    # fiabilidad
+    titulo_seccion(pagina, "Fiabilidad del análisis")
     mostrar_fiabilidad(pagina, r["etiqueta"], r["acierto"], n)
 
+    # parecido con cada campeon y nodos
+    titulo_seccion(pagina, "Parecido con cada campeón")
+    caja_campeones = caja(pagina)
+    caja_campeones.pack(fill="x", padx=MARGEN)
+    ctk.CTkLabel(caja_campeones, text="", height=6).pack()
+    for nombre, v in sorted(resultado.items(), key=lambda kv: -kv[1]):
+        barra(caja_campeones, f"{datos[nombre]['pieza']}  {nombre}", v)
+    ctk.CTkLabel(caja_campeones, text="", height=6).pack()
+
+    titulo_seccion(pagina, "Tus 10 nodos de estilo")
+    caja_nodos = caja(pagina)
+    caja_nodos.pack(fill="x", padx=MARGEN)
+    ctk.CTkLabel(caja_nodos, text="", height=6).pack()
+    for nombre, v in estilo.items():
+        barra(caja_nodos, NOMBRES.get(nombre, nombre), v, MORADO)
+    ctk.CTkLabel(caja_nodos, text="", height=6).pack()
+
     # top 3 partidas (según el estilo promedio de todas tus partidas)
-    ctk.CTkLabel(pagina, text="Top 3 partidas recomendadas", font=BODYBOLD,
-                 text_color=NEGRO).pack(anchor="w", padx=191, pady=(21, 10))
-    ctk.CTkLabel(pagina, text="Utiliza estas partidas como referencia para estudiar nuevas jugadas, "
-                 "descubrir estrategias y mejorar tu toma de decisiones en el tablero.",
-                 wraplength=718, justify="left", font=BODY, text_color=TEXTO).pack(anchor="w", padx=191, pady=(0, 21))
-    fila = ctk.CTkFrame(pagina, fg_color=BLANCO)
-    fila.pack(fill="x", padx=191)
+    titulo_seccion(pagina, "Partidas recomendadas para estudiar")
+    ctk.CTkLabel(pagina, text=f"Las tres partidas de {c['nombre']} que más se parecen a tu forma de jugar.",
+                 font=CUERPO, text_color=GRIS).pack(anchor="w", padx=MARGEN, pady=(0, 12))
+    fila = ctk.CTkFrame(pagina, fg_color="transparent")
+    fila.pack(fill="x", padx=MARGEN - 8)
+    mini = para_ctk("tablero.png", MINI, MORADO)
     for i, p in enumerate(partidas_similares(campeon, r["x"]), 1):
-        tarjeta_partida(fila, i, p)
+        tarjeta_partida(fila, i, p, mini)
 
     # volver a jugar
-    bloque = ctk.CTkFrame(pagina, fg_color=BLANCO)
-    bloque.pack(pady=(51, 10), padx=191)
-    ctk.CTkLabel(bloque, image=para_ctk("twoPieces.png", PIEZAS, (0, 0, 0, 0)), text="").pack(side="left")
-    txt = ctk.CTkFrame(bloque, fg_color=BLANCO)
-    txt.pack(side="left")
-    ctk.CTkLabel(txt, text="¿Quieres intentar otra partida?", font=BODYBOLD,
-                 text_color=NEGRO).pack(anchor="w", padx=21)
-    ctk.CTkLabel(txt, text="Cada partida que guardes mejora la fiabilidad de tu análisis.", font=BODY,
-                 text_color=GRIS, wraplength=583, justify="left").pack(anchor="w", pady=6, padx=21)
-    ctk.CTkButton(txt, text="Volver a intentar →", font=BODY, fg_color=NARANJA, text_color=NEGRO,
-                  hover_color="#D99700", corner_radius=20, width=170, height=36,
-                  command=reintentar).pack(anchor="w", padx=21)
-
-    # detalle de la red
-    ctk.CTkLabel(pagina, text="Procesos y cálculo de red neuronal", font=BODYBOLD,
-                 text_color=NEGRO).pack(anchor="w", padx=191, pady=(20, 8))
-    caja = ctk.CTkFrame(pagina, fg_color="transparent", corner_radius=0, border_width=0)
-    caja.pack(fill="x", padx=191, pady=(0, 30))
-    ctk.CTkLabel(caja, text="Parecido con cada campeón", font=BODYBOLD,
-                 text_color=MORADO).pack(pady=(14, 4), padx=30, anchor="w")
-    for nombre, v in sorted(resultado.items(), key=lambda kv: -kv[1]):
-        barra(caja, nombre, v)
-    ctk.CTkLabel(caja, text="Tus 10 nodos de estilo", font=BODYBOLD,
-                 text_color=MORADO).pack(pady=(14, 4), padx=30, anchor="w")
-    for nombre, v in estilo.items():
-        barra(caja, nombre.replace("_", " "), v, MORADO_CLARO)
-    ctk.CTkLabel(caja, text="", height=8).pack()
-
-    lienzo_imagen(pagina, "footer.png", FOOTER, "#55076B")
+    bloque = caja(pagina)
+    bloque.pack(fill="x", padx=MARGEN, pady=(34, 40))
+    ctk.CTkLabel(bloque, image=para_ctk("twoPieces.png", PIEZAS), text="").pack(
+        side="left", padx=(28, 10), pady=20)
+    txt = ctk.CTkFrame(bloque, fg_color="transparent")
+    txt.pack(side="left", fill="x", expand=True, pady=20)
+    ctk.CTkLabel(txt, text="¿Quieres intentar otra partida?", font=SUBTITULO,
+                 text_color=CREMA).pack(anchor="w")
+    ctk.CTkLabel(txt, text="Cada partida que guardes mejora la fiabilidad de tu análisis.",
+                 font=CUERPO, text_color=GRIS).pack(anchor="w", pady=(4, 0))
+    ctk.CTkButton(bloque, text="Jugar otra", font=("Segoe UI", 18, "bold"), fg_color=MORADO_BOTON,
+                  hover_color=MORADO, corner_radius=14, width=180, height=50,
+                  command=reintentar).pack(side="right", padx=28)
