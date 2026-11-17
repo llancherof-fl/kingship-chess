@@ -222,3 +222,6 @@ __marimo__/
 # STOCKFISH (SE DESCARGA APARTE, VER README)
 stockfish/
 *.exe
+
+usuarios/
+.vscode/
